@@ -10,25 +10,35 @@ node {
 
     env.BRANCH_NAME = env.BRANCH_NAME ? env.BRANCH_NAME : 'master';
     def imageOwner = "dmitrybuhtiyarov"
-    def imageName = "${imageOwner}/${REPO_NAME}:${env.BRANCH_NAME}-${env.BUILD_NUMBER}";
-    def registryUrl = "https://registry.hub.docker.com";
-    def registryCredentialsId = "dockerhub_id";
+    def deployTag = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+    def securityScanTag = "securityScan-${env.BUILD_NUMBER}"
+    def imageName = "${imageOwner}/${REPO_NAME}"
+    def registryFqdn = "registry.hub.docker.com"
+    def registryUrl = "https://${registryFqdn}"
+    def registryCredentialsId = "dockerhub_id"
 
-    def customImage;
     docker.withRegistry(registryUrl, registryCredentialsId) {
-        stage('Build') {
-            customImage = docker.build(imageName, DOCKER_CONTEXT);
+        def securityScanImage;
+        stage('Build for security scan') {
+            securityScanImage = docker.build("${imageName}:${securityScanTag}", DOCKER_CONTEXT);
+        }
+        stage('Push for security scan') {
+            securityScanImage.push();
         }
     }
 
     stage('Security scan') {
-        sh "echo  '${imageName} ${DOCKER_CONTEXT}/Dockerfile' > anchore_images"
+        sh "echo  '${registryFqdn}/${imageName}:${securityScanTag} ${DOCKER_CONTEXT}/Dockerfile' > anchore_images"
         anchore forceAnalyze: true, name: 'anchore_images'
     }
 
     docker.withRegistry(registryUrl, registryCredentialsId) {
+        def image;
+        stage('Build') {
+            image = docker.build("${imageName}:${deployTag}", DOCKER_CONTEXT);
+        }
         stage('Push') {
-            customImage.push();
+            image.push();
         }
     }
 
