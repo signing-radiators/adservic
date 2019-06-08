@@ -29,7 +29,7 @@ node {
 
     stage('Security scan') {
         sh "echo  '${registryFqdn}/${imageName}:${securityScanTag} ${DOCKER_CONTEXT}/Dockerfile' > anchore_images"
-        anchore forceAnalyze: true, name: 'anchore_images'
+        anchore bailOnFail: false, forceAnalyze: true, name: 'anchore_images'
     }
 
     docker.withRegistry(registryUrl, registryCredentialsId) {
