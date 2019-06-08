@@ -18,16 +18,9 @@ node {
     def registryCredentialsId = "dockerhub_id"
 
     stage('Sonarqube') {
-        environment {
-            scannerHome = tool 'sonarqube'
-        }
-        steps {
-            withSonarQubeEnv('sonarqube') {
-                sh "${scannerHome}/bin/sonar-scanner"
-            }
-            timeout(time: 10, unit: 'MINUTES') {
-                waitForQualityGate abortPipeline: true
-            }
+        withSonarQubeEnv('sonarqube') {
+            def scannerHome = tool name: 'sonarqube'
+            sh "${scannerHome}/bin/sonar-scanner"
         }
     }
 
