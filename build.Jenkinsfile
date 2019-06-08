@@ -52,8 +52,9 @@ node {
     }
 
     docker.withRegistry(registryUrl, registryCredentialsId) {
-        stage('Retag & Push') {
-            image.tag("${deployTag}").push();
+        stage('Push') {
+            image.push("${deployTag}");
         }
     }
+
 }
