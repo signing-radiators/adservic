@@ -17,17 +17,22 @@ node {
     def registryUrl = "https://${registryFqdn}"
     def registryCredentialsId = "dockerhub_id"
 
-    stage('Sonarqube') {
-        withSonarQubeEnv('sonarqube') {
-            def scannerHome = tool name: 'sonarqube'
-            sh "${scannerHome}/bin/sonar-scanner"
-        }
-    }
 
     docker.withRegistry(registryUrl, registryCredentialsId) {
         def securityScanImage;
         stage('Build for security scan') {
             securityScanImage = docker.build("${imageName}:${securityScanTag}", DOCKER_CONTEXT);
+        }
+        securityScanImage.inside() {
+            stage('Test') {
+                sh 'sleep 99999999999'
+            }
+            stage('Sonarqube') {
+                withSonarQubeEnv('sonarqube') {
+                    def scannerHome = tool name: 'sonarqube'
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
         }
         stage('Push for security scan') {
             securityScanImage.push();
