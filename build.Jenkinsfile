@@ -17,32 +17,32 @@ node {
     def registryUrl = "https://${registryFqdn}"
     def registryCredentialsId = "dockerhub_id"
 
-    def image;
-    docker.image('openjdk:8-jre-slim').inside("--entrypoint=''") {
-        docker.withRegistry(registryUrl, registryCredentialsId) {
-            stage('Build for security scan') {
-                image = docker.build("${imageName}:${securityScanTag}", DOCKER_CONTEXT);
-            }
-        }
-        stage('Sonarqube') {
-            withSonarQubeEnv('sonarqube') {
-                def scannerHome = tool name: 'sonarqube'
-                sh "${scannerHome}/bin/sonar-scanner"
-            }
-        }
 
-        stage("Quality Gate") {
-            timeout(time: 5, unit: 'MINUTES') {
-                def qg = waitForQualityGate()
-                if (qg.status != 'OK') {
-                    error "Pipeline aborted due to quality gate failure: ${qg.status}"
+    def image;
+    docker.withRegistry(registryUrl, registryCredentialsId) {
+        stage('Build for security scan') {
+            image = docker.build("${imageName}:${securityScanTag}", DOCKER_CONTEXT);
+        }
+        image.inside("--entrypoint=''") {
+            stage('Sonarqube') {
+                withSonarQubeEnv('sonarqube') {
+                    def scannerHome = tool name: 'sonarqube'
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
+
+            stage("Quality Gate") {
+                timeout(time: 5, unit: 'MINUTES') {
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK') {
+                        error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                    }
                 }
             }
         }
-        docker.withRegistry(registryUrl, registryCredentialsId) {
-            stage('Build for security scan') {
-                image.push();
-            }
+
+        stage('Push for security scan') {
+            image.push();
         }
     }
 
