@@ -30,7 +30,7 @@ node {
                     sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
-            stage("Quality Gate"){
+            stage("Quality Gate") {
                 timeout(time: 1, unit: 'HOURS') {
                     def qg = waitForQualityGate()
                     if (qg.status != 'OK') {
@@ -38,7 +38,6 @@ node {
                     }
                 }
             }
-      }
         }
         stage('Push for security scan') {
             securityScanImage.push();
