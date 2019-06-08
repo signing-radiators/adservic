@@ -23,7 +23,8 @@ node {
         stage('Build for security scan') {
             image = docker.build("${imageName}:${securityScanTag}", DOCKER_CONTEXT);
         }
-        image.inside("--entrypoint=''") {
+
+        docker.image('8u212-b04-jre-slim-stretch').inside("--entrypoint=''") {
             stage('Sonarqube') {
                 withSonarQubeEnv('sonarqube') {
                     def scannerHome = tool name: 'sonarqube'
